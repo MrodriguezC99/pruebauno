@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Stripe\Stripe;
 use Stripe\Customer;
 use Stripe\PaymentMethod;
-use App\Models\UserCard;
+use App\UserCard;
 
 
 class CardController extends Controller
@@ -16,6 +16,7 @@ class CardController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api'); // Protege el controlador con JWT
+
     }
 
 
@@ -35,8 +36,6 @@ class CardController extends Controller
         $request->validate([
             'payment_method' => 'required|string',
         ]);
-
-
 
         $user = Auth::user();
         // Configurar Stripe
@@ -62,6 +61,7 @@ class CardController extends Controller
             // Obtener detalles de la tarjeta
             $card = $paymentMethod->card;
 
+
             // Guardar datos en la tabla user_card
             $userCard = UserCard::create([
                 'user_id' => $user->id,
@@ -84,37 +84,32 @@ class CardController extends Controller
         }
     }
 
-    public function createPaymentMethod(Request $request)
+
+    public function listCards()
     {
-        // Validar que se envíen los datos correctamente
-        $request->validate([
-            'card_number' => 'required|string',
-            'exp_month' => 'required|integer',
-            'exp_year' => 'required|integer',
-            'cvc' => 'required|string',
-        ]);
-
-        // Configurar la clave secreta de Stripe
-        Stripe::setApiKey(env('STRIPE_SECRET'));
-
         try {
-            // Crear un PaymentMethod en Stripe
-            $paymentMethod = PaymentMethod::create([
+            $user = Auth::user();
+
+            if (!$user->stripe_customer_id) {
+                return response()->json([
+                    'status' => 'ERROR',
+                    'message' => 'El usuario no tiene un cliente de Stripe asociado.'
+                ], 404);
+            }
+
+            // Configurar la clave de Stripe
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            // Obtener métodos de pago (tarjetas) del cliente
+            $paymentMethods = PaymentMethod::all([
+                'customer' => $user->stripe_customer_id,
                 'type' => 'card',
-                'card' => [
-                    'number' => $request->card_number,
-                    'exp_month' => $request->exp_month,
-                    'exp_year' => $request->exp_year,
-                    'cvc' => $request->cvc,
-                ],
             ]);
 
             return response()->json([
                 'status' => 'SUCCESS',
-                'message' => 'PaymentMethod creado exitosamente',
-                'payment_method' => $paymentMethod->id,
+                'cards' => $paymentMethods->data,
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'ERROR',

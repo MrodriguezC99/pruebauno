@@ -16,3 +16,15 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+
+
+Route::get('/listatarjetas', function () {
+    return view('listatarjetas');
+});
+
+
+
+Route::get('/metodopago', function () {
+    return view('metodopago');
+});

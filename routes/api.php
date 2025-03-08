@@ -8,7 +8,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CardController;
 use App\Http\Controllers\PaymentController;
-
+use App\Http\Controllers\PruebaController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -21,39 +21,23 @@ use App\Http\Controllers\PaymentController;
 */
 
 
-/* Registrar nuevo usuario al sistema */
-Route::post('/register', [AuthController::class, 'register']);
-/* Login */
-//Route::post('/login', [AuthController::class, 'login']);
-Route::post('/login', [AuthController::class, 'login'])->name('login');
+
+Route::post('/register', [AuthController::class, 'register']); // Registra en la tabla de USUARIOS
+Route::post('/login', [AuthController::class, 'login'])->name('login'); // Crear Token con las credenciales del USUARIO (correo, clave)
+Route::get('/home', [HomeController::class, 'home']); // Verifica si el usuario esta logeado
+
+// Ruta protegida con JWTAuth
+Route::group(['middleware' => ['jwt.auth']], function () {
+    Route::post('/create-payment-method', [PaymentController::class, 'createPaymentMethod']); // Crear un metodo de pago
+});
 
 
-/* Route::middleware('auth:api')->get('/home', [HomeController::class, 'home']); */
-Route::get('/home', [HomeController::class, 'home']);
-
-
-
-
-
-
-
-
-Route::post('/payment-method', [PaymentController::class, 'createPaymentMethod']);
+Route::post('/register-card', [CardController::class, 'registerCard']); // Registra tarjeta | Crear usuario en el dashboard
+Route::get('/list-cards', [CardController::class, 'listCards']); // Lista las tarjtas asociadas al usuario Logeado
+Route::post('/charge-card', [PaymentController::class, 'chargeCard']); // Realizar un cargo a la tarjeta (Pago)
 
 
 
-
-
-/* Route::middleware('auth:api')->post('/register-card', [CardController::class, 'registerCard']); */
-Route::post('/register-card', [CardController::class, 'registerCard']); // Crear usuario en el dashboard
-
-/* Route::post('/create-payment-method', [CardController::class, 'createPaymentMethod']); */
-
-
-
-/* Route::post('/crear-customer', [StripeController::class, 'crear']);
-Route::post('/create-payment-method', [StripeController::class, 'create_pago']);
-Route::post('/pagar', [StripeController::class, 'pagar']); */
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
